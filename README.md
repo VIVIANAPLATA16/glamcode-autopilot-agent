@@ -9,7 +9,16 @@
 Submitted to the **Qwen Cloud Global AI Hackathon**, Track 4: Autopilot Agent.
 
 ## 🌐 Live demo
-The backend runs on an Alibaba Cloud ECS instance (see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for proof of deployment). There is no public frontend URL yet  the agent is demonstrated via the demo video and the local frontend.
+
+| Surface | URL |
+|---|---|
+| Frontend (custom domain) | https://autopilot.glamcode-os.com |
+| Backend API (Alibaba Cloud ECS) | http://47.251.39.38:5000 |
+| Backend health | http://47.251.39.38:5000/api/health |
+
+**Hackathon track:** Track 4 — Autopilot Agent  
+
+**Alibaba Cloud proof (code + ECS):** [`docs/ALIBABA_CLOUD_PROOF.md`](docs/ALIBABA_CLOUD_PROOF.md) · [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) · [`backend/qwen_client.py`](backend/qwen_client.py)
 
 ## 🧠 What is GlamCode Autopilot Agent?
 
@@ -34,6 +43,7 @@ GlamCode Autopilot Agent automates the conversation and the follow-up, while kee
 - Understands customer messages and maps them to real services and available time slots (**strict matching** it won't invent a slot or service that doesn't exist).
 - Keeps **conversation memory** across turns, so the client doesn't have to repeat context.
 - Books, checks, and manages appointments directly against the database.
+- Answers everyday **beauty consultations** (hair, skin, nails, aftercare, salon FAQ) as an integral beauty specialist with 20 years of experience (`consulta_belleza`), without escalating routine questions to a human.
 
 ### 🔁 Proactive follow-up
 - Scheduled job that finds clients who haven't visited in a configurable number of days (`DIAS_INACTIVIDAD`) and reaches out to re-engage them, instead of waiting for them to message first.
@@ -49,6 +59,17 @@ GlamCode Autopilot Agent automates the conversation and the follow-up, while kee
 
 ## 🏗️ Architecture
 
+```mermaid
+flowchart LR
+  User[Client / Judge browser] --> FE[Next.js frontend<br/>Azure App Service<br/>autopilot.glamcode-os.com]
+  FE -->|HTTPS /api proxy| BE[Flask Autopilot Agent<br/>Alibaba Cloud ECS<br/>47.251.39.38:5000]
+  BE -->|OpenAI-compatible<br/>chat/completions| Qwen[Qwen Cloud / DashScope<br/>dashscope-intl.aliyuncs.com]
+  BE --> DB[(SQLite<br/>citas, conversaciones,<br/>revision_humana)]
+  BE -->|HITL checkpoint| Review[Human review queue<br/>approve / discard]
+```
+
+ASCII overview:
+
 ```
 ┌─────────────────────────────────────────────┐
 │                   CLIENT                     │
@@ -56,25 +77,25 @@ GlamCode Autopilot Agent automates the conversation and the follow-up, while kee
 └───────────────────┬───────────────────────────┘
                     │
 ┌───────────────────▼───────────────────────────┐
-│            Next.js 16 frontend                │
-│   /  /proactivo  /revision  (chat simulator,   │
-│    proactive view, human review dashboard)    │
+│     Next.js 16 frontend (Azure App Service)   │
+│   https://autopilot.glamcode-os.com           │
+│   /  /proactivo  /revision                    │
 └───────────────────┬───────────────────────────┘
-                    │  REST API
+                    │  /api/* rewrite (HTTPS→HTTP)
 ┌───────────────────▼───────────────────────────┐
-│           Flask backend (demo_app.py)          │
-│         hosted on Alibaba Cloud ECS            │
-│                                                │
-│  agente_reservas.py   → booking agent          │
-│  revision_humana.py   → escalation + storage   │
+│     Flask backend on Alibaba Cloud ECS         │
+│     http://47.251.39.38:5000                   │
+│  agente_reservas.py  → reactive + beauty       │
+│  agente_proactivo.py → proactive drafts        │
+│  revision_humana.py  → HITL queue + SQLite     │
 └──────────┬─────────────────────┬───────────────┘
-          │                     │
-┌─────────▼────────┐   ┌────────▼──────────┐
-│    Qwen Cloud     │   │      SQLite        │
-│  (qwen-plus, via  │   │  conversations,     │
-│  OpenAI-compatible│   │  appointments,       │
-│  API)             │   │  human review queue  │
-└───────────────────┘   └─────────────────────┘
+           │                     │
+┌──────────▼────────┐   ┌────────▼──────────┐
+│  Qwen Cloud API    │   │      SQLite        │
+│  (Alibaba DashScope│   │  conversations,     │
+│   qwen-plus)       │   │  appointments,       │
+└───────────────────┘   │  human review queue  │
+                        └─────────────────────┘
 ```
 
 ## 🛠️ Tech stack
@@ -217,23 +238,28 @@ glamcode-autopilot-agent/
 │   ├── components/            # Chat simulator, nav, UI primitives
 │   └── lib/                   # API client and shared data
 └── docs/
-    ├── DEPLOYMENT.md          # Proof of Alibaba Cloud deployment
-    └── architecture.png       # System architecture diagram
+    ├── ALIBABA_CLOUD_PROOF.md # Hackathon proof: DashScope API + ECS
+    ├── DEPLOYMENT.md          # ECS deployment details
+    └── architecture.png       # System architecture diagram (optional image)
 ```
 
 ## 🚀 Deployment
 
-The backend is deployed on an **Alibaba Cloud ECS** instance; the agent calls **Qwen Cloud** (`qwen-plus`) for its reasoning and reply generation. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for full proof of deployment.
+- **Backend:** Alibaba Cloud ECS — see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+- **Qwen / Alibaba APIs:** [`backend/qwen_client.py`](backend/qwen_client.py) — see [`docs/ALIBABA_CLOUD_PROOF.md`](docs/ALIBABA_CLOUD_PROOF.md)
+- **Frontend:** Azure App Service + custom domain `autopilot.glamcode-os.com`
 
 ## 🗺️ Roadmap
 
 - [x] Conversational booking agent
+- [x] Beauty consultation persona (`consulta_belleza`)
 - [x] Conversation memory
 - [x] Strict service/availability matching
 - [x] Proactive follow-up job
 - [x] Human review queue (approve/discard)
 - [x] Frontend connected to backend
 - [x] Deployed on Alibaba Cloud ECS
+- [x] Public frontend on custom domain
 - [ ] 3-minute demo video
 - [ ] Devpost submission
 

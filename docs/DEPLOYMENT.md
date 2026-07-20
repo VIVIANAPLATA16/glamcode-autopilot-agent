@@ -21,7 +21,7 @@ This document demonstrates that the GlamCode Autopilot Agent backend is deployed
 
 1. The Flask backend (`backend/demo_app.py`, `backend/agente_reservas.py`, `backend/revision_humana.py`) runs on an Alibaba Cloud ECS instance, listening on `0.0.0.0:5000`.
 2. The port is open in the instance's Security Group, so the API is reachable directly from the public internet at `http://47.251.39.38:5000`.
-3. The Next.js frontend calls this backend via `NEXT_PUBLIC_API_URL` (set in `frontend/.env.local`, not committed to the repo).
+4. The Next.js frontend (Azure) proxies `/api/*` to this backend via `BACKEND_URL` / rewrites (see `frontend/next.config.mjs`), so the public site stays on HTTPS (`https://autopilot.glamcode-os.com`) while the agent runtime remains on Alibaba Cloud ECS.
 4. Incoming customer messages are processed by the booking agent, which calls **Qwen Cloud** (`qwen-plus`, via the OpenAI-compatible API) for natural-language understanding and response generation.
 5. Bookings, conversations, and the human review queue are persisted to a local **SQLite** database on the ECS instance.
 6. Cases the agent is not confident about are routed to the human review flow (`revision_humana.py`) instead of being auto-resolved.
