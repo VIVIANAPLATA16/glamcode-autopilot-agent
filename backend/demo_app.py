@@ -52,6 +52,33 @@ def internal_error(_error):
     return _error_response("Error interno del servidor.", 500)
 
 
+@app.route("/", methods=["GET"])
+def root():
+    """Friendly landing for judges clicking the README backend URL."""
+    return _success_response(
+        {
+            "service": "glamcode-autopilot-agent",
+            "status": "ok",
+            "message": "GlamCode Autopilot Agent API is running on Alibaba Cloud ECS.",
+            "frontend": "https://autopilot.glamcode-os.com",
+            "health": "/api/health",
+            "docs": "https://github.com/VIVIANAPLATA16/glamcode-autopilot-agent",
+            "alibaba_cloud_proof": (
+                "https://github.com/VIVIANAPLATA16/glamcode-autopilot-agent/"
+                "blob/main/docs/ALIBABA_CLOUD_PROOF.md"
+            ),
+            "endpoints": {
+                "GET /api/health": "Health check",
+                "POST /api/simular-mensaje": "Reactive agent (WhatsApp-style message)",
+                "POST /api/ejecutar-seguimiento-proactivo": "Proactive follow-up job",
+                "GET /api/revision-humana": "List human-review / draft queue",
+                "POST /api/revision-humana/<id>/aprobar": "Approve item",
+                "POST /api/revision-humana/<id>/descartar": "Discard item",
+            },
+        }
+    )
+
+
 @app.route("/api/health", methods=["GET"])
 def health():
     return _success_response({"status": "ok", "service": "glamcode-autopilot-agent"})
