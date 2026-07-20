@@ -5,13 +5,19 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from mock_data import HORARIO_APERTURA, HORARIO_CIERRE, SERVICIOS
+from mock_data import HORARIO_APERTURA, HORARIO_CIERRE, SALON_INFO, SERVICIOS
 from qwen_client import chat_completion, parse_json_response
 import revision_humana as rh
 
 logger = logging.getLogger(__name__)
 
-INTENCIONES_VALIDAS = {"gestion_cita", "cotizacion", "queja", "otro"}
+INTENCIONES_VALIDAS = {
+    "gestion_cita",
+    "cotizacion",
+    "queja",
+    "consulta_belleza",
+    "otro",
+}
 UMBRAL_CONFIANZA = 0.6
 
 MENSAJE_QUEJA_CLIENTE = (
@@ -72,6 +78,7 @@ def _enrutar_mensaje(mensaje: str, historial: list[HistorialTurno]) -> dict[str,
         confianza,
     )
 
+    # Baja confianza o fuera de alcance → no improvisar
     if confianza < UMBRAL_CONFIANZA or intencion == "otro":
         return _escalar_revision(
             mensaje=mensaje,
@@ -89,6 +96,9 @@ def _enrutar_mensaje(mensaje: str, historial: list[HistorialTurno]) -> dict[str,
 
     if intencion == "cotizacion":
         return _herramienta_cotizar_servicios(mensaje, clasificacion, historial)
+
+    if intencion == "consulta_belleza":
+        return _herramienta_asesoria_belleza(mensaje, clasificacion, historial)
 
     return _escalar_revision(
         mensaje=mensaje,
@@ -118,7 +128,7 @@ def _clasificar_intencion(
 Analiza el mensaje del cliente considerando el historial de la conversación si existe.
 Responde SOLO con JSON válido con esta estructura:
 {
-  "intencion": "gestion_cita" | "cotizacion" | "queja" | "otro",
+  "intencion": "gestion_cita" | "cotizacion" | "queja" | "consulta_belleza" | "otro",
   "confianza": 0.0 a 1.0,
   "razon": "breve explicación"
 }
@@ -127,7 +137,12 @@ Reglas:
 - "gestion_cita": agendar, reagendar, cancelar o modificar citas
 - "cotizacion": preguntas de precio, costos, cuánto cuesta, alternativas de servicios
 - "queja": insatisfacción, mal servicio, cobro incorrecto, reclamos, quejas
-- "otro": saludos, horarios generales, preguntas fuera de alcance, ambigüedad
+- "consulta_belleza": saludos, horarios/ubicación del salón, consejos de belleza,
+  cuidado de cabello/piel/uñas/cejas, recomendaciones de rutinas o productos genéricos,
+  dudas básicas de estética, "qué me recomiendas", cómo cuidarse después de un servicio
+- "otro": temas claramente fuera de belleza/salón (política, tech, medicina clínica grave, etc.)
+  o ambigüedad total sin relación con el salón
+- Prefiere "consulta_belleza" antes que "otro" cuando el mensaje sea de belleza o atención del salón.
 - Usa el historial para interpretar mensajes cortos o de seguimiento (ej. "¿y qué otro hay?")."""
 
     messages: list[dict[str, str]] = [
@@ -171,6 +186,82 @@ def _manejar_queja(mensaje: str, clasificacion: dict[str, Any]) -> dict[str, Any
         "revision_humana_id": revision["id"],
         "detalle": {"motivo": "Queja detectada — escalamiento obligatorio"},
     }
+
+
+def _herramienta_asesoria_belleza(
+    mensaje: str,
+    clasificacion: dict[str, Any],
+    historial: list[HistorialTurno],
+) -> dict[str, Any]:
+    """
+    Responde consultas básicas de belleza y atención del salón.
+    Persona: especialista en belleza integral con 20 años de experiencia.
+    No escala a humano salvo que el modelo indique riesgo clínico serio.
+    """
+    catalogo = [
+        f"- {info['nombre']} (${info['precio']:,} COP, ~{info['duracion_minutos']} min)"
+        for info in SERVICIOS.values()
+    ]
+    system_prompt = f"""Eres la asesora de belleza de {SALON_INFO['nombre']} en {SALON_INFO['ciudad']}.
+Tienes 20 años de experiencia en belleza integral: cabello, coloración, cuidado de piel,
+uñas, cejas, rutinas de mantenimiento y recomendaciones post-servicio.
+
+Datos del salón:
+- Dirección: {SALON_INFO['direccion']}
+- Teléfono: {SALON_INFO['telefono']}
+- Horario: lunes a sábado, {HORARIO_APERTURA} a {HORARIO_CIERRE}
+- Servicios del catálogo:
+{chr(10).join(catalogo)}
+
+Estilo de respuesta:
+- Español colombiano, cálido, claro y profesional (como en WhatsApp)
+- Máximo 4–6 oraciones o un breve listado cuando ayude
+- Habla como experta práctica: consejos aplicables, sin tecnicismos innecesarios
+- Si saludan, responde el saludo y ofrece ayuda
+- Si preguntan horarios/ubicación/servicios, usa los datos del salón
+- Si piden consejo de belleza, da una recomendación concreta y, si aplica, sugiere un servicio del catálogo
+- NO inventes precios distintos al catálogo; si piden precio exacto, indícales que pueden pedir cotización
+- NO des diagnósticos médicos ni trates emergencias clínicas; en ese caso recomienda ver a un dermatólogo/médico
+- NO prometas resultados garantizados ni ofrezcas compensaciones
+- NO agendes citas aquí; si quieren agendar, invítalas a decir día/hora preferidos
+- Máximo 1 emoji si encaja de forma natural"""
+
+    messages: list[dict[str, str]] = [
+        {"role": "system", "content": system_prompt},
+        *_historial_a_mensajes_qwen(historial),
+        {"role": "user", "content": mensaje},
+    ]
+
+    try:
+        respuesta = chat_completion(messages, temperature=0.7)
+    except Exception:
+        logger.exception("Error en asesoria_belleza")
+        return _escalar_revision(
+            mensaje=mensaje,
+            intencion="consulta_belleza",
+            motivo="Error generando asesoría de belleza",
+            origen="reactivo_consulta_belleza",
+            herramienta="asesoria_belleza",
+            clasificacion=clasificacion,
+        )
+
+    if not respuesta.strip():
+        return _escalar_revision(
+            mensaje=mensaje,
+            intencion="consulta_belleza",
+            motivo="Respuesta de asesoría vacía",
+            origen="reactivo_consulta_belleza",
+            herramienta="asesoria_belleza",
+            clasificacion=clasificacion,
+        )
+
+    return _respuesta_exitosa(
+        mensaje,
+        clasificacion,
+        "asesoria_belleza",
+        respuesta.strip(),
+        {"persona": "especialista_belleza_20_anos"},
+    )
 
 
 def _herramienta_gestionar_cita(

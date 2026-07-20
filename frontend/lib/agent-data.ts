@@ -2,7 +2,7 @@
 // Tipos compartidos del agente GlamCode Autopilot
 // ---------------------------------------------------------------------------
 
-export type Intent = "cita" | "cotizacion" | "queja" | "otro"
+export type Intent = "cita" | "cotizacion" | "queja" | "consulta_belleza" | "otro"
 
 export type ClientProfile = "frecuente" | "vip" | "ocasional" | "inactivo" | "nuevo"
 
@@ -38,6 +38,7 @@ export const INTENT_LABELS: Record<Intent, string> = {
   cita: "Gestión de cita",
   cotizacion: "Cotización",
   queja: "Queja",
+  consulta_belleza: "Asesoría belleza",
   otro: "Otro",
 }
 

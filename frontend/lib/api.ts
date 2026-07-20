@@ -76,7 +76,7 @@ interface SimularMensajeResponse {
   }
 }
 
-const VALID_INTENTS: Intent[] = ["cita", "cotizacion", "queja", "otro"]
+const VALID_INTENTS: Intent[] = ["cita", "cotizacion", "queja", "consulta_belleza", "otro"]
 
 function mapIntent(intencion: string): Intent {
   if (intencion === "gestion_cita") return "cita"

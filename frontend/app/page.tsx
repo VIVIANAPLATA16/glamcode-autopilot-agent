@@ -1,7 +1,12 @@
-import { CalendarClock, Tag, AlertTriangle, UserCog } from "lucide-react"
+import { CalendarClock, Tag, AlertTriangle, UserCog, Sparkles } from "lucide-react"
 import { ChatSimulator } from "@/components/chat-simulator"
 
 const CAPABILITIES = [
+  {
+    icon: Sparkles,
+    title: "Asesoría de belleza",
+    desc: "Responde dudas básicas como experta en belleza integral con 20 años de experiencia.",
+  },
   {
     icon: CalendarClock,
     title: "Gestión de citas",

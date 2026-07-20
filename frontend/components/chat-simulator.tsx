@@ -29,12 +29,16 @@ interface ChatMessage {
 const WELCOME: ChatMessage = {
   id: "welcome",
   role: "agent",
-  text: "¡Hola! Soy el asistente virtual del salón 💛 Escríbeme como si fueras un cliente por WhatsApp y verás cómo respondo, qué intención detecto y cómo resuelvo cada caso.",
-  meta: { intent: "otro", tool: "saludo_inicial", confidence: 99, escalated: false },
+  text: "¡Hola! Soy la asesora virtual del salón 💛 Con 20 años de experiencia en belleza integral te ayudo con consejos, precios, citas y lo que necesites. Escríbeme como si fueras una clienta por WhatsApp.",
+  meta: { intent: "consulta_belleza", tool: "saludo_inicial", confidence: 99, escalated: false },
 }
 
 const SCENARIO_PROMPTS = [
-  { label: "Cotización simple", userMessage: "Hola, ¿cuánto cuesta un manicure semipermanente?" },
+  {
+    label: "Consejo de belleza",
+    userMessage: "Hola, tengo el cabello reseco después del tinte, ¿qué me recomiendas?",
+  },
+  { label: "Cotización simple", userMessage: "Hola, ¿cuánto cuesta un manicure tradicional?" },
   {
     label: "Cita ambigua",
     userMessage: "Quiero algo para el cabello el finde, no sé bien qué",
@@ -42,10 +46,6 @@ const SCENARIO_PROMPTS = [
   {
     label: "Queja de cliente",
     userMessage: "Estoy súper molesta, me dejaron el tinte manchado y me cobraron completo 😡",
-  },
-  {
-    label: "Reagendar cita",
-    userMessage: "Necesito mover mi cita del jueves para la otra semana",
   },
 ]
 

@@ -3,6 +3,7 @@ import {
   Tag,
   AlertTriangle,
   MessageCircle,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -19,6 +20,7 @@ const INTENT_ICONS: Record<Intent, LucideIcon> = {
   cita: CalendarClock,
   cotizacion: Tag,
   queja: AlertTriangle,
+  consulta_belleza: Sparkles,
   otro: MessageCircle,
 }
 
