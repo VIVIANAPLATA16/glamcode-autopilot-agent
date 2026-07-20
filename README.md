@@ -9,11 +9,11 @@
 Submitted to the **Qwen Cloud Global AI Hackathon**, Track 4: Autopilot Agent.
 
 ## 🌐 Live demo
-The backend runs on an Alibaba Cloud ECS instance (see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for proof of deployment). There is no public frontend URL yet — the agent is demonstrated via the demo video and the local frontend.
+The backend runs on an Alibaba Cloud ECS instance (see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for proof of deployment). There is no public frontend URL yet  the agent is demonstrated via the demo video and the local frontend.
 
 ## 🧠 What is GlamCode Autopilot Agent?
 
-GlamCode Autopilot Agent is an autonomous AI agent that runs the day-to-day customer interaction for a service business end to end — answering WhatsApp-style messages, booking appointments, quoting services, and proactively following up with clients — without a human writing every reply.
+GlamCode Autopilot Agent is an autonomous AI agent that runs the day-to-day customer interaction for a service business end to end — answering WhatsApp-style messages, booking appointments, quoting services, and proactively following up with clients without a human writing every reply.
 
 Unlike a simple chatbot that only reacts to messages, the agent also runs **proactive jobs** (reaching out to clients who haven't visited in a while) and routes anything it isn't confident about to a **human review queue** instead of guessing, so a person approves or discards the action before it reaches the client.
 
@@ -31,7 +31,7 @@ GlamCode Autopilot Agent automates the conversation and the follow-up, while kee
 ## ✨ Features
 
 ### 💬 Conversational booking agent
-- Understands customer messages and maps them to real services and available time slots (**strict matching** — it won't invent a slot or service that doesn't exist).
+- Understands customer messages and maps them to real services and available time slots (**strict matching** it won't invent a slot or service that doesn't exist).
 - Keeps **conversation memory** across turns, so the client doesn't have to repeat context.
 - Books, checks, and manages appointments directly against the database.
 
