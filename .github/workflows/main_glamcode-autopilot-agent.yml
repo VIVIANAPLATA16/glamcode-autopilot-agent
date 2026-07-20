@@ -16,17 +16,16 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Node.js version
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '22.x'
 
       - name: npm install and build
         working-directory: ./frontend
         env:
-          # Same-origin in the browser; Next rewrites /api → Flask (BACKEND_URL).
-          NEXT_PUBLIC_API_URL: ""
+          # Used by next.config.mjs rewrites at build time.
+          # Do NOT set NODE_ENV=production here — it skips devDependencies and breaks `next build`.
           BACKEND_URL: http://47.251.39.38:5000
-          NODE_ENV: production
         run: |
           npm install
           npm run build --if-present
