@@ -32,7 +32,7 @@ export function IntentBadge({ intent }: { intent: Intent }) {
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
         isComplaint
-          ? "border-destructive/40 bg-destructive/10 text-destructive"
+          ? "border-warning/40 bg-warning/10 text-warning"
           : "border-border bg-secondary text-secondary-foreground",
       )}
     >
