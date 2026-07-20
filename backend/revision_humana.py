@@ -81,6 +81,18 @@ def init_db() -> None:
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS turnos_conversacion (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                conversacion_id INTEGER NOT NULL,
+                rol TEXT NOT NULL,
+                mensaje TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                FOREIGN KEY (conversacion_id) REFERENCES conversaciones(id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_turnos_conversacion_id
+                ON turnos_conversacion(conversacion_id, id);
             """
         )
 
@@ -268,6 +280,97 @@ def descartar_item(item_id: int) -> dict[str, Any]:
     return obtener_item(item_id)
 
 
+def crear_sesion_conversacion() -> int:
+    """Crea una sesión de conversación multi-turno y devuelve su id."""
+    now = _utc_now()
+    with get_connection() as conn:
+        cursor = conn.execute(
+            """
+            INSERT INTO conversaciones
+                (mensaje_cliente, intencion, herramienta, respuesta_agente,
+                 escalado_revision, revision_id, created_at)
+            VALUES ('', NULL, NULL, '', 0, NULL, ?)
+            """,
+            (now,),
+        )
+        return int(cursor.lastrowid)
+
+
+def conversacion_existe(conversacion_id: int) -> bool:
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM conversaciones WHERE id = ?",
+            (conversacion_id,),
+        ).fetchone()
+    return row is not None
+
+
+def guardar_turno(conversacion_id: int, rol: str, mensaje: str) -> None:
+    """Persiste un turno (cliente o agente) en la sesión de conversación."""
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO turnos_conversacion (conversacion_id, rol, mensaje, timestamp)
+            VALUES (?, ?, ?, ?)
+            """,
+            (conversacion_id, rol, mensaje, _utc_now()),
+        )
+
+
+def obtener_historial(conversacion_id: int, limite: int = 6) -> list[dict[str, Any]]:
+    """Devuelve los últimos turnos de la conversación (más antiguos primero)."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT rol, mensaje, timestamp
+            FROM turnos_conversacion
+            WHERE conversacion_id = ?
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (conversacion_id, limite),
+        ).fetchall()
+    return [
+        {"rol": row["rol"], "mensaje": row["mensaje"], "timestamp": row["timestamp"]}
+        for row in reversed(rows)
+    ]
+
+
+def actualizar_conversacion_sesion(
+    conversacion_id: int,
+    *,
+    mensaje_cliente: str,
+    intencion: str | None,
+    herramienta: str | None,
+    respuesta_agente: str,
+    escalado_revision: bool,
+    revision_id: int | None = None,
+) -> None:
+    """Actualiza el resumen de la sesión con el último intercambio."""
+    with get_connection() as conn:
+        conn.execute(
+            """
+            UPDATE conversaciones
+            SET mensaje_cliente = ?,
+                intencion = ?,
+                herramienta = ?,
+                respuesta_agente = ?,
+                escalado_revision = ?,
+                revision_id = ?
+            WHERE id = ?
+            """,
+            (
+                mensaje_cliente,
+                intencion,
+                herramienta,
+                respuesta_agente,
+                1 if escalado_revision else 0,
+                revision_id,
+                conversacion_id,
+            ),
+        )
+
+
 def guardar_conversacion(
     *,
     mensaje_cliente: str,
@@ -277,25 +380,20 @@ def guardar_conversacion(
     escalado_revision: bool,
     revision_id: int | None = None,
 ) -> int:
-    with get_connection() as conn:
-        cursor = conn.execute(
-            """
-            INSERT INTO conversaciones
-                (mensaje_cliente, intencion, herramienta, respuesta_agente,
-                 escalado_revision, revision_id, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                mensaje_cliente,
-                intencion,
-                herramienta,
-                respuesta_agente,
-                1 if escalado_revision else 0,
-                revision_id,
-                _utc_now(),
-            ),
-        )
-        return int(cursor.lastrowid)
+    """Compatibilidad: crea sesión, guarda turnos y actualiza resumen."""
+    conversacion_id = crear_sesion_conversacion()
+    guardar_turno(conversacion_id, "cliente", mensaje_cliente)
+    guardar_turno(conversacion_id, "agente", respuesta_agente)
+    actualizar_conversacion_sesion(
+        conversacion_id,
+        mensaje_cliente=mensaje_cliente,
+        intencion=intencion,
+        herramienta=herramienta,
+        respuesta_agente=respuesta_agente,
+        escalado_revision=escalado_revision,
+        revision_id=revision_id,
+    )
+    return conversacion_id
 
 
 def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:

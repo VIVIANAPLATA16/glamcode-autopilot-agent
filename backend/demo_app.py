@@ -71,8 +71,18 @@ def simular_mensaje():
     if not mensaje:
         return _error_response("El campo 'mensaje' no puede estar vacío.")
 
+    conversacion_id = body.get("conversacion_id")
+    if conversacion_id is not None:
+        try:
+            conversacion_id = int(conversacion_id)
+        except (TypeError, ValueError):
+            return _error_response("conversacion_id debe ser un entero.")
+
     try:
-        resultado = agente_reservas.procesar_mensaje(mensaje)
+        resultado = agente_reservas.procesar_mensaje(
+            mensaje,
+            conversacion_id=conversacion_id,
+        )
         return _success_response({"resultado": resultado})
     except ValueError as exc:
         logger.warning("Validation error in reactive flow: %s", exc)
