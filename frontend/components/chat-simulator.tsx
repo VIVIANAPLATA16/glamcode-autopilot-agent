@@ -7,7 +7,7 @@ import {
   User,
   Wrench,
   Gauge,
-  UserCog,
+  ShieldCheck,
   Sparkles,
   Loader2,
   AlertCircle,
@@ -254,9 +254,31 @@ function AgentMetaPanel({ meta }: { meta: AgentMeta }) {
       </div>
 
       {meta.escalated && (
-        <div className="flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
-          <UserCog className="size-4 shrink-0" aria-hidden="true" />
-          Caso escalado a revisión humana — requiere confirmación de una coordinadora.
+        <div
+          className="hitl-checkpoint relative overflow-hidden rounded-xl border border-primary/35 bg-gradient-to-r from-primary/12 via-card to-primary/8 px-3 py-2.5"
+          role="status"
+        >
+          <span className="hitl-checkpoint-shimmer pointer-events-none absolute inset-0" aria-hidden="true" />
+          <div className="relative flex items-start gap-2.5">
+            <span className="hitl-checkpoint-orb mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/15 text-primary">
+              <ShieldCheck className="size-3.5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs font-semibold tracking-wide text-primary">
+                  Checkpoint humano activo
+                </p>
+                <span className="hitl-checkpoint-pulse inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
+                  <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
+                  En cola
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                El agente pausó el flujo automático. Una coordinadora revisará y confirmará antes de
+                responder al cliente.
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>

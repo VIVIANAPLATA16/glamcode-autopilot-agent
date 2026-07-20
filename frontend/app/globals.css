@@ -103,3 +103,79 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Human-in-the-loop checkpoint — intentional, not an error state */
+@keyframes hitl-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes hitl-orb-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 45%, transparent);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in oklab, var(--primary) 0%, transparent);
+    transform: scale(1.04);
+  }
+}
+
+@keyframes hitl-dot-blink {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes hitl-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hitl-checkpoint {
+  animation: hitl-enter 0.45s ease-out both;
+}
+
+.hitl-checkpoint-shimmer {
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    color-mix(in oklab, var(--primary) 18%, transparent) 50%,
+    transparent 60%
+  );
+  animation: hitl-shimmer 2.8s ease-in-out infinite;
+}
+
+.hitl-checkpoint-orb {
+  animation: hitl-orb-pulse 2.2s ease-in-out infinite;
+}
+
+.hitl-checkpoint-pulse > span:first-child {
+  animation: hitl-dot-blink 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hitl-checkpoint,
+  .hitl-checkpoint-shimmer,
+  .hitl-checkpoint-orb,
+  .hitl-checkpoint-pulse > span:first-child {
+    animation: none;
+  }
+}
