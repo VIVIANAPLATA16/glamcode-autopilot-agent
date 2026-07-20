@@ -23,7 +23,10 @@ jobs:
       - name: npm install and build
         working-directory: ./frontend
         env:
-          NEXT_PUBLIC_API_URL: http://47.251.39.38:5000
+          # Same-origin in the browser; Next rewrites /api → Flask (BACKEND_URL).
+          NEXT_PUBLIC_API_URL: ""
+          BACKEND_URL: http://47.251.39.38:5000
+          NODE_ENV: production
         run: |
           npm install
           npm run build --if-present

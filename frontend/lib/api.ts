@@ -8,10 +8,15 @@ import type {
   TaskOrigin,
 } from "@/lib/agent-data"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"
+// Empty string = same-origin (used in production behind Next.js rewrites).
+// Locally defaults to Flask on :5000 unless NEXT_PUBLIC_API_URL is set.
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === "production" ? "" : "http://localhost:5000")
 
 function getApiUrl(path: string): string {
-  return `${API_URL.replace(/\/$/, "")}${path}`
+  const base = API_URL.replace(/\/$/, "")
+  return `${base}${path}`
 }
 
 export class ApiError extends Error {
@@ -33,8 +38,9 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     })
   } catch {
     throw new ApiError(
-      "No se pudo conectar con el servidor. Verifica que el backend esté corriendo en " +
-        API_URL,
+      API_URL
+        ? `No se pudo conectar con el servidor. Verifica que el backend esté corriendo en ${API_URL}`
+        : "No se pudo conectar con el servidor API. Intenta de nuevo en unos segundos.",
     )
   }
 
